@@ -61,7 +61,6 @@ except FileNotFoundError as e:
     print("Sentiment analysis functionality will be limited.")
 
 # Mock database for demonstration purposes
-# In a real application, you would use a proper database
 # This includes a mock property database and user credentials
 MOCK_USERS = {
     'admin': {
