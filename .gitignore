@@ -1,0 +1,4 @@
+# Ignore the nested clone directory so Git can add all other files
+KTP-JB/
+README.md
+# you can add other patterns you don’t want tracked here

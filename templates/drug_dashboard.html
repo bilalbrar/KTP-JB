@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Drug Reviews Sentiment Dashboard</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .logo-container {
+            display: flex;
+            align-items: center;
+            margin-right: 20px;
+        }
+        .logo {
+            height: 40px;
+            margin-right: 10px;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+        header {
+            background-color: #9b59b6;
+            color: white;
+            padding: 15px 0;
+        }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 90%;
+            margin: 0 auto;
+        }
+        h1 {
+            margin: 0;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            padding: 8px 15px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            color: white;
+            font-weight: bold;
+        }
+        .back-btn {
+            background-color: #3498db;
+        }
+        .logout-btn {
+            background-color: #e74c3c;
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .review-section {
+            background-color: white;
+            padding: 20px; 
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        textarea { 
+            width: 100%; 
+            padding: 10px; 
+            margin: 10px 0; 
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+        }
+        button.analyze-btn { 
+            padding: 10px 20px;
+            background-color: #8e44ad; 
+            color: white; 
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button.analyze-btn:hover {
+            background-color: #7d3c98;
+        }
+        .loading { 
+            display: none; 
+            margin-left: 10px;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        .positive { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .neutral { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .negative { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info-box {
+            background-color: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: 0 4px 4px 0;
+        }
+        .examples {
+            margin-top: 30px;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .example-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border-left: 3px solid #6c757d;
+            cursor: pointer;
+        }
+        .example-item:hover {
+            background-color: #e9ecef;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="header-left">
+                <div class="logo-container">
+                    <img src="/public/bcu.jpg" alt="BCU Logo" class="logo">
+                    <img src="/public/jhoots.png" alt="Jhoots Logo" class="logo">
+                </div>
+                <h1>Drug Reviews Sentiment Analysis</h1>
+            </div>
+            <div class="btn-group">
+                <button class="btn back-btn" onclick="window.location.href='/select-dashboard'">Back to Dashboards</button>
+                <button class="btn logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="info-box">
+            <p>This dashboard uses a machine learning model to analyze the sentiment of drug reviews. Enter a review about a medication to classify it as positive, neutral, or negative.</p>
+        </div>
+        
+        <div class="review-section">
+            <h3>Enter Drug Review</h3>
+            <textarea id="reviewText" rows="6" placeholder="Enter your drug review here..."></textarea>
+            
+            <div>
+                <button class="analyze-btn" onclick="analyzeSentiment()">Analyze Sentiment</button>
+                <span class="loading" id="loadingIndicator">Processing...</span>
+            </div>
+            
+            <div class="result" id="resultContainer">
+                <h3>Sentiment Result:</h3>
+                <p id="sentimentResult"></p>
+            </div>
+        </div>
+        
+        <div class="examples">
+            <h3>Example Reviews</h3>
+            <p>Click on an example to use it:</p>
+            <div class="example-item" onclick="useExample(this)">
+                This medication helped reduce my migraine pain significantly with minimal side effects. I've been taking it for three months and it has improved my quality of life.
+            </div>
+            <div class="example-item" onclick="useExample(this)">
+                The drug worked ok but I experienced some mild nausea and dizziness. It did help with my symptoms somewhat but not as much as I had hoped.
+            </div>
+            <div class="example-item" onclick="useExample(this)">
+                Terrible experience with this medication. The side effects were unbearable including insomnia and severe stomach pain. I had to stop taking it after just one week.
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Check if user is authenticated
+        function checkAuth() {
+            const token = document.cookie.split('token=')[1];
+            if (!token) {
+                window.location.href = '/login';
+            }
+            return token;
+        }
+        
+        // Call on page load
+        const token = checkAuth();
+        
+        // Logout function
+        function logout() {
+            document.cookie = 'token=; Max-Age=0; path=/;';
+            window.location.href = '/login';
+        }
+        
+        // Use example function
+        function useExample(element) {
+            document.getElementById('reviewText').value = element.textContent.trim();
+        }
+        
+        // Analyze sentiment function
+        async function analyzeSentiment() {
+            const reviewText = document.getElementById('reviewText').value;
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const resultContainer = document.getElementById('resultContainer');
+            
+            if (!reviewText.trim()) {
+                alert('Please enter a review');
+                return;
+            }
+            
+            loadingIndicator.style.display = 'inline';
+            resultContainer.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/drug/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-access-token': token
+                    },
+                    body: JSON.stringify({
+                        review: reviewText
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const sentimentResult = document.getElementById('sentimentResult');
+                    
+                    sentimentResult.innerText = `The review is classified as: ${data.sentiment}`;
+                    
+                    // Apply styling based on sentiment
+                    resultContainer.className = 'result';
+                    resultContainer.classList.add(data.sentiment);
+                    
+                    resultContainer.style.display = 'block';
+                } else {
+                    alert('Error: ' + (data.error || 'Something went wrong'));
+                }
+            } catch (error) {
+                console.error('API error:', error);
+                alert('API error: ' + error.message);
+            } finally {
+                loadingIndicator.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
