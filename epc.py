@@ -409,7 +409,7 @@ import os  # Adding missing os import
 # Drop identifiers and address fields
 X = final_df.drop(columns=[
     'LMK_KEY','UPRN', 'ADDRESS', 'ADDRESS1', 'POSTCODE', 'POSTTOWN',
-    'POTENTIAL_ENERGY_RATING'
+    'POTENTIAL_ENERGY_RATING', 'NUMBER_HEATED_ROOMS','NUMBER_HABITABLE_ROOMS'
 ])
 y = final_df['POTENTIAL_ENERGY_RATING']
 
@@ -426,11 +426,28 @@ X_train, X_test, y_train, y_test = train_test_split(
 numeric_feats = X_train.select_dtypes(include=['int64','float64']).columns.tolist()
 categorical_feats = X_train.select_dtypes(include=['category']).columns.tolist()
 
+# --- FEATURE SELECTION ---
+from sklearn.feature_selection import VarianceThreshold
+# 1) Drop low-variance features
+sel = VarianceThreshold(threshold=0.01)
+sel.fit(X_train[numeric_feats])
+low_var = [f for i, f in enumerate(numeric_feats) if not sel.get_support()[i]]
+numeric_feats = [f for f in numeric_feats if f not in low_var]
+# 2) Drop highly correlated features (|corr| > 0.9)
+corr = X_train[numeric_feats].corr().abs()
+upper = corr.where(np.triu(np.ones(corr.shape), k=1).astype(bool))
+high_corr = [col for col in upper.columns if any(upper[col] > 0.9)]
+numeric_feats = [f for f in numeric_feats if f not in high_corr]
+# --- END FEATURE SELECTION ---
+
+# build pipelines using the reduced numeric_feats list
 num_pipe = Pipeline([
-    ('scaler', StandardScaler())
+    ('imputer', SimpleImputer(strategy='median')),
+    ('scaler',  StandardScaler())
 ])
 cat_pipe = Pipeline([
-    ('ohe', OneHotEncoder(handle_unknown='ignore'))
+    ('imputer', SimpleImputer(strategy='constant', fill_value='Missing')),
+    ('ohe',     OneHotEncoder(handle_unknown='ignore'))
 ])
 
 preprocessor = ColumnTransformer([
@@ -448,9 +465,16 @@ models = {
 print("Training models with SMOTE to balance classes...")
 results = {}
 
-# always train on the full dataset
-X_train_sample = X_train
-y_train_sample = y_train
+# Sample data to speed up training even more
+sample_size = 10000  # Much smaller sample for faster execution
+if len(X_train) > sample_size:
+    print(f"Using {sample_size} samples for faster training")
+    from sklearn.utils import resample
+    X_train_sample = resample(X_train, n_samples=sample_size, random_state=42)
+    y_train_sample = resample(y_train, n_samples=sample_size, random_state=42)
+else:
+    X_train_sample = X_train
+    y_train_sample = y_train
 
 # Use parallel processing and simpler evaluation
 with parallel_backend('threading', n_jobs=-1):
