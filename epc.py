@@ -153,12 +153,8 @@ print(certs.dtypes.value_counts())
 obj_cols = certs.select_dtypes(include='object').columns.tolist()
 print(f"{len(obj_cols)} object columns:\n", obj_cols)
 
-# Cell: Full preprocessing of certificates dataframe
-
-
 
 # 1) Drop free-text, geodata, very sparse, and low-value columns
-#    (including user-specified columns to drop)
 drop_cols = [
     'BUILDING_REFERENCE_NUMBER',
     # geodata labels
@@ -275,7 +271,6 @@ recs.drop(columns=['IMPROVEMENT_ID_TEXT'], inplace=True, errors='ignore')
 
 import pandas as pd
 
-# assume `certs` and `recs` are already loaded & preprocessed DataFrames
 
 # 1) Identify matching LMK_KEYs
 common_keys = set(certs['LMK_KEY']).intersection(recs['LMK_KEY'])
@@ -449,43 +444,31 @@ models = {
     'RandomForest': RandomForestClassifier(n_estimators=50, max_depth=10, random_state=42, n_jobs=-1)  # Reduced complexity
 }
 
-# Train without SMOTE and without detailed reports
-print("Training models (simplified for speed)...")
+# Train using SMOTE to balance minority classes
+print("Training models with SMOTE to balance classes...")
 results = {}
 
-# Sample data to speed up training even more
-sample_size = 10000  # Much smaller sample for faster execution
-if len(X_train) > sample_size:
-    print(f"Using {sample_size} samples for faster training")
-    from sklearn.utils import resample
-    X_train_sample = resample(X_train, n_samples=sample_size, random_state=42)
-    y_train_sample = resample(y_train, n_samples=sample_size, random_state=42)
-else:
-    X_train_sample = X_train
-    y_train_sample = y_train
+# always train on the full dataset
+X_train_sample = X_train
+y_train_sample = y_train
 
 # Use parallel processing and simpler evaluation
 with parallel_backend('threading', n_jobs=-1):
     for name, model in models.items():
         start_time = time.time()
         
-        # Simplest pipeline - just preprocessing and model
-        pipe = Pipeline([
+        # pipeline with preprocessing, SMOTE oversampling, and classifier
+        pipe = ImbPipeline([
             ('preproc', preprocessor),
+            ('smote', SMOTE(random_state=42)),
             ('clf', model)
         ])
         
-        # Fit on sample data
         pipe.fit(X_train_sample, y_train_sample)
-        
-        # Quick evaluation - just calculate F1 score
         y_pred = pipe.predict(X_test)
         f1 = f1_score(y_test, y_pred, average='weighted')
         
-        # Store results
         results[name] = {'pipeline': pipe, 'f1': f1}
-        
-        # Simple progress report (no detailed classification report)
         print(f"✓ {name} trained in {time.time() - start_time:.2f}s - F1: {f1:.4f}")
 
 # Select best by F1
