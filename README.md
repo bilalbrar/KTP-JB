@@ -1,127 +1,126 @@
 # BCU Data Analysis Systems
 
-A web application providing access to machine learning models for Energy Performance Certificate (EPC) prediction and drug review sentiment analysis, secured with authentication.
+A Flask web application that provides two secure dashboards:
+
+1. **EPC Prediction**: Predict potential Energy Performance Certificate ratings for properties in Birmingham using trained ML models.  
+2. **Drug Review Sentiment Analysis**: Classify user-entered drug reviews as positive, neutral, or negative.
 
 ## Features
+- JWT-based authentication (login logic in `app.py`).  
+- Interactive EPC dashboard with search by `LMK_KEY`, address, or postcode.  
+- Drug review input with instant sentiment results.  
+- REST API endpoints for programmatic access.  
+- Model training scripts: `epc.py` and `drug.py`.  
+- Frontend templates under `templates/`, static assets in `public/`.
 
-- **EPC Rating Prediction**: Analyze and predict potential energy ratings for properties in Birmingham
-- **Drug Review Sentiment Analysis**: Classify drug reviews as positive, neutral, or negative
-- **Secure Authentication**: JWT-based login system to protect the dashboards and APIs
-- **Responsive Web Interface**: User-friendly dashboards for both analysis systems
-- **API Access**: Endpoints for programmatic access to the prediction models
+## Prerequisites
+- Python 3.9+  
+- Virtual environment tool (venv or conda)  
+- Data files placed in (default paths):
+  - `Birmingham Energy Performance/certificates.csv`
+  - `Birmingham Energy Performance/recommendations.csv`
+  - `Drug Reviews Dataset/drugsComTrain_raw.csv`
 
-## Installation
+## Installation & Setup
+```bash
+# 1. Clone the repo
+git clone https://github.com/bilalbrar/KTP-JB.git
+cd KTP-JB
 
-### Prerequisites
+# 2. Create and activate a virtual environment
+python -m venv venv
+# Windows:
+venv\Scripts\activate
+# macOS/Linux:
+source venv/bin/activate
 
-- Python 3.9+
-- Docker and Docker Compose
+# 3. Install dependencies
+pip install -r requirements.txt
 
-### Setup
+# 4. Prepare your datasets in the folders:
+#    BCU\Birmingham Energy Performance\ and BCU\Drug Reviews Dataset\
 
-1. Clone the repository:
-   ```
-   git clone https://github.com/yourusername/bcu-analysis.git
-   cd bcu-analysis
-   ```
+# 5. (Optional) Train or retrain models
+python epc.py     # outputs models/*.pkl
+python drug.py    # outputs models/best_sentiment_model.pkl
 
-2. Build and run with Docker Compose:
-   ```
-   docker-compose up --build
-   ```
+# 6. Run the Flask application
+python app.py
+```
 
-3. Access the application at http://localhost:5000
+## Project Structure
+```
+BCU/
+├── models/                     # Saved model artifacts
+│   ├── epc_best_model.pkl
+│   ├── epc_preprocessor.pkl
+│   ├── epc_label_encoder.pkl
+│   ├── epc_feature_metadata.pkl
+│   └── best_sentiment_model.pkl
+├── public/                     # Static assets (logos, CSS, JS)
+├── templates/                  # Jinja2 HTML templates
+│   ├── index.html
+│   ├── login.html
+│   ├── dashboard_selection.html
+│   ├── epc_dashboard.html
+│   └── drug_dashboard.html
+├── epc.py                      # EPC data preprocessing & model training
+├── drug.py                     # Drug review preprocessing & model training
+├── app.py                      # Flask app serving dashboards & APIs
+├── requirements.txt            # Python dependencies
+└── README.md
 
-### Manual Setup (without Docker)
-
-1. Create a virtual environment:
-   ```
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-2. Install dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-
-3. Run the application:
-   ```
-   python app.py
-   ```
+```
 
 ## Usage
 
-1. Access the web interface at http://localhost:5000
-2. Login with the credentials:
-   - Username: `admin`
-   - Password: `password`
-3. Select the dashboard you want to use:
-   - EPC Dashboard: Search properties and view predicted energy ratings
-   - Drug Review Dashboard: Analyze sentiment in drug reviews
+### Web Interface
+1. Navigate to `http://localhost:5000`  
+2. Login with default credentials:
+   ```
+   username: admin
+   password: password
+   ```  
+3. Choose a dashboard:
+   - **EPC Dashboard**: Search properties & view predictions  
+   - **Drug Review Dashboard**: Enter review text for sentiment analysis  
 
-## API Documentation
+### API Endpoints
+All endpoints require a JWT in header `x-access-token` (obtained via `/login`).
 
-### Authentication
-
-All API endpoints require a JWT token, obtained by logging in:
-
+#### Authentication
 ```
 POST /login
 Content-Type: application/json
 
-{
-  "username": "admin",
-  "password": "password"
-}
+{ "username":"admin", "password":"password" }
 ```
-
 Response:
 ```json
-{
-  "token": "your-jwt-token"
-}
+{ "token": "<JWT_TOKEN>" }
 ```
 
-Use this token in subsequent requests:
-```
-GET /api/epc/properties?query=birmingham
-X-Access-Token: your-jwt-token
-```
+#### EPC APIs
+- `GET /api/epc/properties?query=<term>`  
+  → List up to 20 matching properties  
+- `POST /api/epc/predict`  
+  Body:
+  ```json
+  { "LMK_KEY": "<property_key>" }
+  ```
 
-### EPC Endpoints
+#### Drug Review API
+- `POST /api/drug/predict`  
+  Body:
+  ```json
+  { "review": "Your drug review text here" }
+  ```
 
-- `GET /api/epc/properties?query=<search_term>`: Search for properties
-- `POST /api/epc/predict`: Predict potential energy rating for a property
-
-### Drug Review Endpoints
-
-- `POST /api/drug/predict`: Analyze sentiment in a drug review
-
-## Project Structure
-
-- `/templates`: HTML templates for the web interface
-- `/models`: Saved machine learning models
-- `/Birmingham Energy Performance`: Dataset for EPC prediction
-- `/Drug Reviews Dataset`: Dataset for sentiment analysis
-- `app.py`: Main Flask application
-- `epc.py`: EPC model training script
-- `drug.py`: Drug sentiment model training script
-
-## Technologies Used
-
-- **Backend**: Flask, JWT
-- **Machine Learning**: scikit-learn, NLTK
-- **Data Processing**: pandas, NumPy
-- **Frontend**: HTML, CSS, JavaScript
-- **Containerization**: Docker
+## Notes
+- Model training scripts write to `models/`. Re-run them if data or parameters change.  
+- Adjust dataset paths in `epc.py` and `app.py` if your folder layout differs.  
+- Extend authentication logic in `app.py` for production use.
 
 ## License
-
 MIT License
-
-## Acknowledgments
-
-- Birmingham City University
-- Jhoots Pharmacy
 
