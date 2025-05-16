@@ -21,9 +21,11 @@ nltk.download('stopwords')
 nltk.download('wordnet')
 nltk.download('omw-1.4')
 
-# Load dataset
-data_path = r"C:\Users\bilal\BCU\Drug Reviews Dataset\drugsComTrain_raw.csv"
-df = pd.read_csv(data_path)[['review', 'drugName', 'condition', 'rating']]
+# Load datasets
+data_path_train = r"C:\Users\bilal\BCU\Drug Reviews Dataset\drugsComTrain_raw.csv"
+data_path_test  = r"C:\Users\bilal\BCU\Drug Reviews Dataset\drugsComTest_raw.csv"
+df_train = pd.read_csv(data_path_train)[['review','drugName','condition','rating']]
+df_test  = pd.read_csv(data_path_test)[['review','drugName','condition','rating']]
 
 # Map ratings to sentiment
 def map_sentiment(r):
@@ -34,7 +36,8 @@ def map_sentiment(r):
     else:
         return 'positive'
 
-df['sentiment'] = df['rating'].apply(map_sentiment)
+df_train['sentiment'] = df_train['rating'].apply(map_sentiment)
+df_test['sentiment']  = df_test ['rating'].apply(map_sentiment)
 
 # Preprocess text
 stop_words = set(stopwords.words('english'))
@@ -48,14 +51,12 @@ def clean_text(text):
     tokens = [lemmatizer.lemmatize(t) for t in tokens]
     return ' '.join(tokens)
 
-df['cleaned_review'] = df['review'].astype(str).apply(clean_text)
+df_train['cleaned_review'] = df_train['review'].astype(str).apply(clean_text)
+df_test ['cleaned_review'] = df_test ['review'].astype(str).apply(clean_text)
 
-# Split data
-X = df['cleaned_review']
-y = df['sentiment']
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, stratify=y, random_state=42
-)
+# Prepare train/test sets (no train_test_split)
+X_train, y_train = df_train['cleaned_review'], df_train['sentiment']
+X_test,  y_test  = df_test ['cleaned_review'], df_test ['sentiment']
 
 # Define pipelines
 pipelines = {
