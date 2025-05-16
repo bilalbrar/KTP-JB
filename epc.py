@@ -409,7 +409,7 @@ import os  # Adding missing os import
 # Drop identifiers and address fields
 X = final_df.drop(columns=[
     'LMK_KEY','UPRN', 'ADDRESS', 'ADDRESS1', 'POSTCODE', 'POSTTOWN',
-    'POTENTIAL_ENERGY_RATING', 'NUMBER_HEATED_ROOMS','NUMBER_HABITABLE_ROOMS'
+    'POTENTIAL_ENERGY_RATING'
 ])
 y = final_df['POTENTIAL_ENERGY_RATING']
 
