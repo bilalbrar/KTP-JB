@@ -300,10 +300,8 @@ final_df = pd.merge(
     how='inner'
 )
 
-# 5) Inspect
-print("Final DataFrame shape:", final_df.shape)
-print("Sample columns:", final_df.columns.tolist()[:10], "…")
-display(final_df.head())
+
+
 
 # Map the target POTENTIAL_ENERGY_RATING to an ordinal numeric scale
 rating_order = ['A','B','C','D','E','F','G']
@@ -380,7 +378,7 @@ for col in num_cols:
         # ensure numeric dtype
         final_df[col] = pd.to_numeric(final_df[col], errors='coerce')
         med = final_df[col].median(skipna=True)
-        final_df[col] = final_df[col].fillna(med)
+        final_df[col] = final_df[col] = final_df[col].fillna(med)
 
 # 2) Categorical features: add 'Missing' category and fill missing
 import pandas.api.types as ptypes
